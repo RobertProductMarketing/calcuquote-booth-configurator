@@ -4,7 +4,7 @@ Interactive 3D walkthrough and configurator for CalcuQuote's 6×6 m (36 m²) isl
 
 ## Live demo
 
-👉 https://robertproductmarketing.github.io/calcuquote-booth-configurator/
+Once published via GitHub Pages: `https://<username>.github.io/<repo>/`
 
 ## Controls
 

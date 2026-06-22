@@ -74,14 +74,18 @@
   #seltools .lbl{font-size:11.5px;color:#cdd9ee;font-weight:600}
 
   /* wall editor */
-  #walltools{top:16px;left:50%;transform:translateX(-50%);display:none;padding:8px 12px;align-items:center;gap:8px}
+  #walltools{top:16px;left:50%;transform:translateX(-50%);display:none;padding:8px 12px;flex-direction:column;gap:6px}
   #walltools.show{display:flex}
+  #walltools .strow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:center}
   #walltools .nm{font-weight:700;color:#ffd9c2;font-size:12.5px}
   #walltools .lbl{font-size:11.5px;color:#cdd9ee;font-weight:600}
   #walltools select{background:#142a4d;color:#fff;border:1px solid #2c456f;border-radius:6px;padding:4px 6px;font-size:12px}
-  #walltools .sbtn{cursor:pointer;border:1px solid rgba(255,255,255,.18);background:rgba(30,99,179,.25);color:#fff;padding:5px 9px;border-radius:8px;font-size:12px;font-weight:600;user-select:none}
-  #walltools .sbtn:hover{background:rgba(242,106,33,.35)}
-  #walltools .sbtn.del{background:rgba(181,75,75,.35);border-color:#aa3a4a}
+  #walltools input[type=text]{background:#142a4d;color:#fff;border:1px solid #2c456f;border-radius:6px;padding:4px 7px;font-size:12px;width:150px}
+  .sbtn{cursor:pointer;border:1px solid rgba(255,255,255,.18);background:rgba(30,99,179,.25);color:#fff;padding:5px 9px;border-radius:8px;font-size:12px;font-weight:600;user-select:none}
+  .sbtn:hover{background:rgba(242,106,33,.35)}
+  .sbtn.del{background:rgba(181,75,75,.35);border-color:#aa3a4a}
+  .sbtn.upl{background:rgba(47,158,143,.3);border-color:rgba(47,158,143,.55);position:relative;overflow:hidden}
+  .sbtn.upl input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
 
   #controls{bottom:16px;left:16px;max-width:330px;padding:12px 14px;font-size:12.5px;line-height:1.5}
   #controls b{color:#ffd9c2}
@@ -312,6 +316,7 @@
     <span class="lbl">Rotate</span>
     <span class="sbtn rot" id="rotL">↺ Left</span>
     <span class="sbtn rot" id="rotR">Right ↻</span>
+    <span class="sbtn upl" id="selUpload">⬆ Image<input type="file" accept="image/*"></span>
     <span class="sbtn" id="dup">Duplicate</span>
     <span class="sbtn del" id="del">Delete</span>
   </div>
@@ -327,16 +332,23 @@
 </div>
 
 <div id="walltools" class="panel">
-  <span class="nm" id="wallName">Wall</span>
-  <span class="lbl">Style</span>
-  <select id="wallStyleSel">
-    <option value="branded">Branded</option>
-    <option value="solid">Solid (white)</option>
-    <option value="half">Half-height</option>
-    <option value="glass">Glass</option>
-  </select>
-  <span class="sbtn del" id="wallRemove">Remove</span>
-  <span class="sbtn" id="wallClose">Close</span>
+  <div class="strow">
+    <span class="nm" id="wallName">Wall</span>
+    <span class="lbl">Style</span>
+    <select id="wallStyleSel">
+      <option value="branded">Branded</option>
+      <option value="solid">Solid (white)</option>
+      <option value="half">Half-height</option>
+      <option value="glass">Glass</option>
+    </select>
+    <span class="sbtn upl" id="wallUpload">⬆ Image<input type="file" accept="image/*"></span>
+    <span class="sbtn del" id="wallRemove">Remove</span>
+    <span class="sbtn" id="wallClose">Close</span>
+  </div>
+  <div class="strow" id="wallTextRow">
+    <span class="lbl">Heading</span><input type="text" id="wallTitle" placeholder="Heading">
+    <span class="lbl">Sub</span><input type="text" id="wallSub" placeholder="Sub-text">
+  </div>
 </div>
 
 <div id="hint">Click to look around · WASD to move · Esc to exit</div>
@@ -366,16 +378,18 @@ const camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight
 function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;
   const ctx=c.getContext('2d');draw(ctx,w,h);const t=new THREE.CanvasTexture(c);t.anisotropy=8;return t;}
 const TEX={};
-TEX.wall=canvasTex(1024,512,(ctx,w,h)=>{
+const WALL_TEXT={title:'CalcuQuote',sub:'Smarter sourcing & quoting for electronics mfg'};
+function makeWallTex(){return canvasTex(1024,512,(ctx,w,h)=>{
   const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#0B2545');g.addColorStop(1,'#1E63B3');
   ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
   ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=2;
   for(let i=0;i<14;i++){ctx.beginPath();ctx.moveTo(0,i*40);ctx.lineTo(w,i*40+30);ctx.stroke();}
   ctx.fillStyle='#F26A21';ctx.fillRect(70,300,150,10);
-  ctx.fillStyle='#fff';ctx.font='bold 92px Helvetica, Arial';ctx.fillText('CalcuQuote',64,250);
+  ctx.fillStyle='#fff';ctx.font='bold 92px Helvetica, Arial';ctx.fillText(WALL_TEXT.title||'',64,250);
   ctx.fillStyle='#bcd2f0';ctx.font='34px Helvetica, Arial';
-  ctx.fillText('Smarter sourcing & quoting for electronics mfg',64,360);
-});
+  ctx.fillText(WALL_TEXT.sub||'',64,360);
+});}
+TEX.wall=makeWallTex();
 TEX.banner=canvasTex(1024,256,(ctx,w,h)=>{
   ctx.fillStyle='#0B2545';ctx.fillRect(0,0,w,h);ctx.fillStyle='#F26A21';ctx.fillRect(0,h-14,w,14);
   ctx.fillStyle='#fff';ctx.font='bold 120px Helvetica, Arial';ctx.textAlign='center';ctx.textBaseline='middle';
@@ -527,6 +541,7 @@ const SPOTS=new THREE.Group();scene.add(SPOTS);
 const FURN=new THREE.Group();scene.add(FURN);     // configured furniture (movable)
 const EXTRA=new THREE.Group();scene.add(EXTRA);   // user-added objects (movable)
 let WALLSTYLE={};  // per-side style overrides {back:'glass',...}; empty = use global/default
+const WALLIMG={};  // per-side uploaded image texture (in-memory only)
 function clear(grp){while(grp.children.length){const c=grp.children.pop();
   c.traverse&&c.traverse(o=>{if(o.geometry)o.geometry.dispose();});}}
 function spot(x,z){const s=new THREE.SpotLight(0xfff4e6,0.85,14,Math.PI/5,0.5,1.2);
@@ -552,14 +567,17 @@ function buildShell(){
     const wstyle=effStyle(side);
     const horiz=(side==='back'||side==='front');const len=horiz?W:D;
     const wh=(wstyle==='half')?H*0.5:H;
+    const bw=horiz?len:th, bd=horiz?th:len;
     let mesh;
     if(wstyle==='glass'){
       const m=new THREE.MeshStandardMaterial({color:0x9ec7ec,transparent:true,opacity:0.18,roughness:.05,metalness:.1});
-      mesh=new THREE.Mesh(new THREE.BoxGeometry(horiz?len:th,wh,horiz?th:len),m);mesh.receiveShadow=true;
+      mesh=new THREE.Mesh(new THREE.BoxGeometry(bw,wh,bd),m);mesh.receiveShadow=true;
+    }else if(WALLIMG[side]){           // per-wall uploaded image wins
+      mesh=box(bw,wh,bd,0xffffff,{map:WALLIMG[side],rough:.6});
     }else if(wstyle==='branded'){
-      mesh=box(horiz?len:th,wh,horiz?th:len,0xffffff,{map:TEX.wall,rough:.6});mesh.userData.role='wall';
+      mesh=box(bw,wh,bd,0xffffff,{map:TEX.wall,rough:.6});mesh.userData.role='wall';
     }else{
-      mesh=box(horiz?len:th,wh,horiz?th:len,0xeef1f6,{rough:.7});  // white expo wall
+      mesh=box(bw,wh,bd,0xeef1f6,{rough:.7});  // white expo wall
     }
     const y=wh/2;
     if(side==='back')mesh.position.set(0,y,-hz+th/2);
@@ -697,16 +715,39 @@ function pickAny(e){setNdc(e);
 /* ---- wall click-editor ---- */
 const WALL_LABEL={back:'Back wall',left:'Left wall',right:'Right wall',front:'Front wall'};
 let editingWall=null;const walltools=document.getElementById('walltools');
+function wallEff(side){return WALLSTYLE[side]||(side==='back'?'branded':document.getElementById('wallStyle').value);}
+function toggleWallTextRow(side){
+  const eff=document.getElementById('wallStyleSel').value;
+  document.getElementById('wallTextRow').style.display=(eff==='branded'&&!WALLIMG[side])?'flex':'none';}
 function openWallEditor(side){editingWall=side;selectObj(null);
   document.getElementById('wallName').textContent=WALL_LABEL[side];
-  document.getElementById('wallStyleSel').value=WALLSTYLE[side]||(side==='back'?'branded':document.getElementById('wallStyle').value);
+  document.getElementById('wallStyleSel').value=wallEff(side);
+  document.getElementById('wallTitle').value=WALL_TEXT.title;
+  document.getElementById('wallSub').value=WALL_TEXT.sub;
+  toggleWallTextRow(side);
   walltools.classList.add('show');}
 function closeWallEditor(){editingWall=null;walltools.classList.remove('show');}
-document.getElementById('wallStyleSel').addEventListener('change',e=>{if(editingWall){WALLSTYLE[editingWall]=e.target.value;buildShell();}});
+document.getElementById('wallStyleSel').addEventListener('change',e=>{if(editingWall){WALLSTYLE[editingWall]=e.target.value;buildShell();toggleWallTextRow(editingWall);}});
 document.getElementById('wallRemove').onclick=()=>{if(!editingWall)return;
   const cb=document.getElementById('wall'+editingWall.charAt(0).toUpperCase()+editingWall.slice(1));
   if(cb)cb.checked=false;buildShell();closeWallEditor();};
 document.getElementById('wallClose').onclick=closeWallEditor;
+document.getElementById('wallTitle').addEventListener('input',e=>{WALL_TEXT.title=e.target.value;TEX.wall=makeWallTex();buildShell();});
+document.getElementById('wallSub').addEventListener('input',e=>{WALL_TEXT.sub=e.target.value;TEX.wall=makeWallTex();buildShell();});
+
+/* ---- image upload helper + per-wall / per-object uploads ---- */
+function loadImageFile(file,cb){const url=URL.createObjectURL(file);
+  new THREE.TextureLoader().load(url,tex=>{tex.anisotropy=8;cb(tex);},undefined,()=>{});}
+function applyTexToObject(obj,tex){let n=0;
+  obj.traverse(o=>{if(o.isMesh&&o.userData.role){o.material=o.material.clone();o.material.map=tex;o.material.color&&o.material.color.set(0xffffff);o.material.needsUpdate=true;n++;}});
+  if(n===0)obj.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.map=tex;o.material.color&&o.material.color.set(0xffffff);o.material.needsUpdate=true;n++;}});
+  return n;}
+document.querySelector('#wallUpload input[type=file]').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];if(!f||!editingWall)return;
+  loadImageFile(f,tex=>{WALLIMG[editingWall]=tex;buildShell();toggleWallTextRow(editingWall);});e.target.value='';});
+document.querySelector('#selUpload input[type=file]').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];if(!f||!selected)return;
+  loadImageFile(f,tex=>{applyTexToObject(selected,tex);});e.target.value='';});
 function planePoint(e){setNdc(e);const p=new THREE.Vector3();return ray.ray.intersectPlane(dragPlane,p)?p:null;}
 function selectObj(o){
   selected=o;
@@ -831,7 +872,7 @@ function setCfg(o){for(const id in o){const e=document.getElementById(id);if(!e)
 function collectObjects(){return allObjects().map(o=>({t:o.userData.type||'chair',
   p:[+o.position.x.toFixed(3),+o.position.y.toFixed(3),+o.position.z.toFixed(3)],
   r:+o.rotation.y.toFixed(3),s:[+o.scale.x.toFixed(3),+o.scale.y.toFixed(3),+o.scale.z.toFixed(3)]}));}
-function saveState(){return {cfg:getCfg(),wallStyles:Object.assign({},WALLSTYLE),objs:collectObjects()};}
+function saveState(){return {cfg:getCfg(),wallStyles:Object.assign({},WALLSTYLE),wallText:Object.assign({},WALL_TEXT),objs:collectObjects()};}
 // default scene modelled on CalcuQuote's real inline stand (white walls, blue floor, branded back wall)
 const DEFAULT_SCENE={
   cfg:{boothW:6,boothD:6,wallH:3.2,wallBack:true,wallLeft:true,wallRight:true,wallFront:false,wallStyle:'solid',
@@ -851,7 +892,8 @@ const DEFAULT_SCENE={
   ]};
 function loadDefaultScene(){loadState(DEFAULT_SCENE);}
 function loadState(st){if(!st)return;
-  WALLSTYLE=Object.assign({},st.wallStyles||{});closeWallEditor();
+  WALLSTYLE=Object.assign({},st.wallStyles||{});Object.keys(WALLIMG).forEach(k=>delete WALLIMG[k]);closeWallEditor();
+  if(st.wallText){WALL_TEXT.title=st.wallText.title||'';WALL_TEXT.sub=st.wallText.sub||'';TEX.wall=makeWallTex();}
   setCfg(st.cfg||{});buildShell();clear(FURN);clearExtra();selectObj(null);
   (st.objs||[]).forEach(o=>{const g=makeObject(o.t);g.userData.type=o.t;
     g.position.set(o.p[0],o.p[1],o.p[2]);g.rotation.y=o.r||0;
@@ -887,7 +929,9 @@ sections.forEach(d=>d.addEventListener('toggle',()=>{
   if(d.open)sections.forEach(o=>{if(o!==d)o.open=false;});
 }));
 
-el.addEventListener('mousedown',e=>{if(mode!=='orbit')return;px=e.clientX;py=e.clientY;downX=e.clientX;downY=e.clientY;
+el.addEventListener('mousedown',e=>{
+  if(mode==='walk'){walkLook=true;return;}   // drag to look around while inside
+  if(mode!=='orbit')return;px=e.clientX;py=e.clientY;downX=e.clientX;downY=e.clientY;
   if(e.button===0){const hit=pickAny(e);
     if(hit&&hit.kind==='obj'){const o=hit.obj;closeWallEditor();selectObj(o);
       if(e.shiftKey){objRotating=true;return;}        // Shift+drag → rotate
@@ -897,7 +941,7 @@ el.addEventListener('mousedown',e=>{if(mode!=='orbit')return;px=e.clientX;py=e.c
   }else if(e.button===2){panning=true;}});
 window.addEventListener('mouseup',e=>{
   if(dragging&&!objDragging&&Math.abs(e.clientX-downX)<4&&Math.abs(e.clientY-downY)<4){selectObj(null);closeWallEditor();}
-  dragging=panning=objDragging=objRotating=false;riders=[];});
+  dragging=panning=objDragging=objRotating=walkLook=false;riders=[];});
 el.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('mousemove',e=>{if(mode!=='orbit')return;const dx=e.clientX-px,dy=e.clientY-py;px=e.clientX;py=e.clientY;
   if(objRotating&&selected){selected.rotation.y-=dx*0.012;boxHelper&&boxHelper.update();return;}
@@ -913,11 +957,12 @@ const keys={};let yaw=-Math.PI*0.78,pitch=-0.05,yawT=yaw,pitchT=pitch;const LOOK
 const walkPos=new THREE.Vector3(3,1.6,3.5);
 document.addEventListener('keydown',e=>{keys[e.code]=true;
   if(mode==='walk'&&e.code.startsWith('Arrow'))e.preventDefault();
+  if(e.code==='Escape'&&mode==='walk')setMode('orbit');
   if((e.code==='Delete'||e.code==='Backspace')&&selected&&mode==='orbit'){e.preventDefault();deleteObj();}});
 document.addEventListener('keyup',e=>{keys[e.code]=false;});
-document.addEventListener('mousemove',e=>{if(mode!=='walk'||document.pointerLockElement!==el)return;
+document.addEventListener('mousemove',e=>{if(mode!=='walk')return;
+  const locked=document.pointerLockElement===el;if(!locked&&!walkLook)return;   // pointer-lock OR drag-to-look
   yawT-=e.movementX*LOOK_SENS;pitchT=Math.max(-1.2,Math.min(1.2,pitchT-e.movementY*LOOK_SENS));});
-document.addEventListener('pointerlockchange',()=>{if(mode==='walk'&&document.pointerLockElement!==el)setMode('orbit');});
 function setMode(m){mode=m;
   document.getElementById('btnOrbit').classList.toggle('active',m==='orbit');
   document.getElementById('btnWalk').classList.toggle('active',m==='walk');
