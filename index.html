@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CalcuQuote — electronica 2026 Booth Configurator (6×6m)</title>
+<style>
+  :root{ --navy:#0B2545; --blue:#1E63B3; --accent:#F26A21; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#0a1020;color:#fff}
+  #app{position:fixed;inset:0}
+  canvas{display:block}
+  .panel{position:absolute;background:rgba(10,22,40,.85);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+  #info{top:16px;left:16px;max-width:280px;padding:14px 16px;font-size:13px;line-height:1.5}
+  #info h1{margin:0 0 4px;font-size:15px}
+  #info .sub{color:#9fb4d6;font-size:12px;margin-bottom:10px}
+  #info .row{display:flex;justify-content:space-between;color:#cdd9ee}
+  #info .row span:last-child{color:#fff;font-weight:600}
+  .ftpedit input{width:46px;background:#142a4d;color:#fff;border:1px solid #2c456f;border-radius:5px;
+    padding:2px 4px;font-size:12.5px;font-weight:600;text-align:center}
+  .ftpedit input::-webkit-outer-spin-button,.ftpedit input::-webkit-inner-spin-button{opacity:.5}
+
+  /* config panel */
+  #cfg{top:16px;right:16px;width:286px;max-height:calc(100vh - 120px);overflow-y:auto;padding:14px 16px;font-size:12.5px}
+  #cfg h2{margin:0 0 2px;font-size:14px}
+  #cfg .hint{color:#8fa4c6;font-size:11px;margin-bottom:10px}
+  #cfg .grp{border-top:1px solid rgba(255,255,255,.1);padding:4px 0}
+  #cfg .grp:first-of-type{border-top:none}
+  #cfg .gt{font-weight:700;color:#ffd9c2;margin:0;font-size:12px;letter-spacing:.2px}
+  summary.gt{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;
+    padding:6px 2px;user-select:none;border-radius:6px}
+  summary.gt::-webkit-details-marker{display:none}
+  summary.gt:hover{color:#fff}
+  summary.gt::after{content:"›";font-size:16px;color:#8fa4c6;transform:rotate(90deg);transition:transform .15s}
+  details[open] > summary.gt::after{transform:rotate(-90deg)}
+  details[open] > summary.gt{color:#fff}
+  details.grp > *:not(summary){margin-left:2px}
+  #cfg label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5px 0;color:#cdd9ee}
+  #cfg label .v{color:#fff;font-variant-numeric:tabular-nums;min-width:46px;text-align:right}
+  #cfg input[type=range]{flex:1;accent-color:var(--accent);height:4px}
+  #cfg input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+  #cfg .toggle{justify-content:flex-start;gap:8px}
+  #cfg::-webkit-scrollbar{width:8px}#cfg::-webkit-scrollbar-thumb{background:#2c456f;border-radius:4px}
+  .pal{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .pbtn{cursor:pointer;border:1px solid rgba(255,255,255,.16);background:rgba(30,99,179,.22);color:#fff;
+    padding:7px 8px;border-radius:8px;font-size:11.5px;font-weight:600;text-align:left}
+  .pbtn:hover{background:rgba(242,106,33,.32)}
+  #cfg select{background:#142a4d;color:#fff;border:1px solid #2c456f;border-radius:6px;padding:4px 6px;font-size:12px}
+  #cfg input[type=file]{color:#cdd9ee}
+  #cfg input[type=file]::file-selector-button{background:#1E63B3;color:#fff;border:none;border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;margin-right:8px}
+  .cat{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:#7e93b6;margin:8px 0 4px}
+  .cnt{font-size:11px;color:#8fa4c6;font-weight:600}
+  .invlist{display:flex;flex-direction:column;gap:3px;max-height:180px;overflow-y:auto}
+  .invrow{display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;
+    background:rgba(30,99,179,.16);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:5px 8px;font-size:12px}
+  .invrow:hover{background:rgba(242,106,33,.28)}
+  .invrow .x{color:#e88;font-weight:700;padding:0 3px}
+  .invrow .x:hover{color:#ff9a9a}
+  .invlist:empty::after{content:"Empty stand — add objects from the library.";color:#7e93b6;font-size:11px}
+
+  /* selection toolbar */
+  #seltools{top:16px;left:50%;transform:translateX(-50%);display:none;padding:8px 12px;flex-direction:column;gap:6px}
+  #seltools.show{display:flex}
+  #seltools .strow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:center}
+  #seltools .nm{font-weight:700;color:#ffd9c2;font-size:12.5px;margin-right:2px}
+  #seltools .sbtn{cursor:pointer;border:1px solid rgba(255,255,255,.18);background:rgba(30,99,179,.25);
+    color:#fff;padding:5px 9px;border-radius:8px;font-size:12px;font-weight:600;user-select:none}
+  #seltools .sbtn:hover{background:rgba(242,106,33,.35)}
+  #seltools .sbtn.del{background:rgba(181,75,75,.35);border-color:#aa3a4a}
+  #seltools .sbtn.rot{background:rgba(242,106,33,.22);border-color:rgba(242,106,33,.5)}
+  #seltools .sbtn.rot:hover{background:rgba(242,106,33,.45)}
+  #seltools input[type=range]{accent-color:var(--accent);width:74px}
+  #seltools .lbl{font-size:11.5px;color:#cdd9ee;font-weight:600}
+
+  /* wall editor */
+  #walltools{top:16px;left:50%;transform:translateX(-50%);display:none;padding:8px 12px;align-items:center;gap:8px}
+  #walltools.show{display:flex}
+  #walltools .nm{font-weight:700;color:#ffd9c2;font-size:12.5px}
+  #walltools .lbl{font-size:11.5px;color:#cdd9ee;font-weight:600}
+  #walltools select{background:#142a4d;color:#fff;border:1px solid #2c456f;border-radius:6px;padding:4px 6px;font-size:12px}
+  #walltools .sbtn{cursor:pointer;border:1px solid rgba(255,255,255,.18);background:rgba(30,99,179,.25);color:#fff;padding:5px 9px;border-radius:8px;font-size:12px;font-weight:600;user-select:none}
+  #walltools .sbtn:hover{background:rgba(242,106,33,.35)}
+  #walltools .sbtn.del{background:rgba(181,75,75,.35);border-color:#aa3a4a}
+
+  #controls{bottom:16px;left:16px;max-width:330px;padding:12px 14px;font-size:12.5px;line-height:1.5}
+  #controls b{color:#ffd9c2}
+  kbd{background:#1b2c4a;border:1px solid #2c456f;border-radius:5px;padding:1px 6px;font-size:11px}
+  .btns{position:absolute;bottom:16px;right:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:300px}
+  .btn{cursor:pointer;border:1px solid rgba(255,255,255,.18);background:rgba(30,99,179,.25);color:#fff;
+    padding:8px 13px;border-radius:10px;font-size:12.5px;font-weight:600;user-select:none}
+  .btn:hover{background:rgba(242,106,33,.35)}
+  .btn.active{background:var(--accent);border-color:var(--accent)}
+  #hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:rgba(10,22,40,.9);padding:14px 22px;border-radius:12px;font-size:14px;display:none;pointer-events:none}
+  #err{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#3a1320;border:1px solid #aa3a4a;
+    padding:18px 24px;border-radius:12px;max-width:420px;display:none}
+  @media (max-width:760px){#info{display:none}}
+
+  /* onboarding tour */
+  #tourOverlay{position:fixed;inset:0;background:rgba(6,12,24,.66);backdrop-filter:blur(2px);display:none;z-index:50}
+  #tourOverlay.show{display:block}
+  #tourCard{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(440px,90vw);
+    background:#0e1f38;border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:22px 24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.55)}
+  #tourCard h3{margin:0 0 8px;font-size:18px;color:#fff}
+  #tourCard p{margin:0;font-size:14px;line-height:1.55;color:#cdd9ee}
+  #tourCard kbd{background:#1b2c4a;border:1px solid #2c456f;border-radius:5px;padding:1px 6px;font-size:12px}
+  .tourFoot{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:10px}
+  .tourDots{display:flex;gap:6px}
+  .tourDots i{width:7px;height:7px;border-radius:50%;background:#33476b;transition:background .15s}
+  .tourDots i.on{background:var(--accent)}
+  .tourBtns{display:flex;gap:8px}
+  .tbtn{cursor:pointer;border:1px solid rgba(255,255,255,.18);background:rgba(30,99,179,.3);color:#fff;
+    padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;user-select:none}
+  .tbtn:hover{background:rgba(242,106,33,.4)}
+  .tbtn.primary{background:var(--accent);border-color:var(--accent)}
+  .tbtn.ghost{background:transparent;border-color:transparent;color:#8fa4c6;padding:8px 10px}
+  #helpBtn{width:34px;padding:8px 0;text-align:center;font-weight:800}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="info" class="panel">
+  <h1>CalcuQuote · Booth Configurator</h1>
+  <div class="sub">electronica 2026 · Munich · Nov 10–13</div>
+  <div class="row"><span>Stand footprint</span><span class="ftpedit"><input id="ftpW" type="number" min="2" max="12" step="0.5" value="6"> × <input id="ftpD" type="number" min="2" max="12" step="0.5" value="6"> m</span></div>
+  <div class="row"><span>Area</span><span id="area">36.0 m²</span></div>
+  <div class="row"><span>Type</span><span id="standType">Corner</span></div>
+</div>
+
+<div id="cfg" class="panel">
+  <h2>Configure the booth</h2>
+  <div class="hint">Drag sliders / toggle items — the 3D booth rebuilds live.</div>
+
+  <details class="grp" open>
+    <summary class="gt">Object library</summary>
+    <div class="hint" style="margin:0 0 6px">Click an item to drop it in. Then click it in the scene to move it; use the top toolbar to resize (W/H/D), lift, rotate, duplicate or delete.</div>
+    <div class="pal" style="margin-bottom:8px">
+      <button class="pbtn" id="resetLayout">↺ Reset layout</button>
+      <button class="pbtn" id="clearAdded">Clear added only</button>
+    </div>
+    <div class="cat">Displays</div>
+    <div id="palette" class="pal">
+      <button class="pbtn" data-add="kiosk">+ Demo kiosk</button>
+      <button class="pbtn" data-add="tv">+ TV on stand</button>
+      <button class="pbtn" data-add="laptop">+ Laptop</button>
+      <button class="pbtn" data-add="brochure">+ Brochure</button>
+    </div>
+    <div class="cat">Tables &amp; seating</div>
+    <div class="pal">
+      <button class="pbtn" data-add="desk">+ Desk</button>
+      <button class="pbtn" data-add="table">+ Meeting table</button>
+      <button class="pbtn" data-add="coffee">+ Coffee table</button>
+      <button class="pbtn" data-add="chair">+ Chair</button>
+      <button class="pbtn" data-add="stool">+ Bar stool</button>
+      <button class="pbtn" data-add="sofa">+ Sofa</button>
+    </div>
+    <div class="cat">Structure &amp; decor</div>
+    <div class="pal">
+      <button class="pbtn" data-add="counter">+ Counter</button>
+      <button class="pbtn" data-add="cabin">+ Storage cabin</button>
+      <button class="pbtn" data-add="plant">+ Plant</button>
+      <button class="pbtn" data-add="person">+ Person</button>
+    </div>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Scene objects <span id="invCount" class="cnt"></span></summary>
+    <div class="hint" style="margin:0 0 6px">Everything in the booth. Click a row to select & frame it.</div>
+    <div id="invList" class="invlist"></div>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Presets — save &amp; reuse</summary>
+    <div class="hint" style="margin:0 0 6px">Save a booth setup by name and reload it any time. Export a file to share or back up.</div>
+    <label style="gap:6px"><input type="text" id="presetName" placeholder="e.g. Automotive 6×6" style="flex:1;min-width:0;background:#142a4d;color:#fff;border:1px solid #2c456f;border-radius:6px;padding:5px 7px;font-size:12px">
+      <button class="pbtn" id="savePreset" style="width:auto">Save</button></label>
+    <label style="gap:6px"><select id="presetList" style="flex:1;min-width:0"></select></label>
+    <div class="pal">
+      <button class="pbtn" id="loadPreset">Load</button>
+      <button class="pbtn" id="delPreset">Delete</button>
+      <button class="pbtn" id="newBooth">New (default)</button>
+      <button class="pbtn" id="exportBooth">Export file</button>
+      <button class="pbtn" id="importLabel" style="grid-column:1 / -1;position:relative;overflow:hidden">Import file
+        <input type="file" id="importBooth" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer"></button>
+    </div>
+    <div id="presetStatus" class="hint" style="margin-top:6px"></div>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Upload graphics</summary>
+    <div class="hint" style="margin:0 0 6px">Replace what's shown on screens, logo panels, the back wall or banner with your own image (PNG / JPG).</div>
+    <label>Apply to
+      <select id="mediaTarget">
+        <option value="selected">Selected object</option>
+        <option value="screen">All monitor screens</option>
+        <option value="logo">All logo panels</option>
+        <option value="wall">Back wall</option>
+        <option value="banner">Overhead banner</option>
+      </select>
+    </label>
+    <input type="file" id="mediaFile" accept="image/*" style="width:100%;margin-top:6px;font-size:11px">
+    <div id="mediaStatus" class="hint" style="margin-top:6px"></div>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Stand shell &amp; size</summary>
+    <label>Width <input type="range" id="boothW" min="2" max="12" step="0.5" value="6"><span class="v" data-for="boothW">6.0 m</span></label>
+    <label>Depth <input type="range" id="boothD" min="2" max="12" step="0.5" value="6"><span class="v" data-for="boothD">6.0 m</span></label>
+    <label>Wall height <input type="range" id="wallH" min="2.5" max="5" step="0.1" value="3"><span class="v" data-for="wallH">3.0 m</span></label>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Walls</summary>
+    <div class="hint" style="margin:0 0 6px">Stand-type presets set which sides have walls:</div>
+    <div class="pal" style="margin-bottom:8px">
+      <button class="pbtn" data-walls="island">Island</button>
+      <button class="pbtn" data-walls="peninsula">Peninsula</button>
+      <button class="pbtn" data-walls="corner">Corner</button>
+      <button class="pbtn" data-walls="inline">Inline / row</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="wallBack" checked> Back wall</label>
+    <label class="toggle"><input type="checkbox" id="wallLeft" checked> Left wall</label>
+    <label class="toggle"><input type="checkbox" id="wallRight"> Right wall</label>
+    <label class="toggle"><input type="checkbox" id="wallFront"> Front wall</label>
+    <label style="margin-top:6px">Wall style
+      <select id="wallStyle">
+        <option value="branded">Branded (logo)</option>
+        <option value="solid">Solid colour</option>
+        <option value="half">Half-height</option>
+        <option value="glass">Glass / clear</option>
+      </select>
+    </label>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Overhead banner</summary>
+    <label class="toggle"><input type="checkbox" id="bannerOn" checked> Show banner</label>
+    <label>Height <input type="range" id="bannerH" min="3.5" max="6" step="0.1" value="4.2"><span class="v" data-for="bannerH">4.2 m</span></label>
+    <label>Size <input type="range" id="bannerSz" min="2" max="5" step="0.25" value="4"><span class="v" data-for="bannerSz">4.0 m</span></label>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Demo screen (back wall)</summary>
+    <label class="toggle"><input type="checkbox" id="screenOn" checked> Show screen</label>
+    <label>Width <input type="range" id="screenW" min="1.2" max="3.5" step="0.1" value="2.4"><span class="v" data-for="screenW">2.4 m</span></label>
+    <label>Height <input type="range" id="screenH" min="0.7" max="2" step="0.1" value="1.35"><span class="v" data-for="screenH">1.35 m</span></label>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Demo kiosks</summary>
+    <label>Count <input type="range" id="kioskN" min="0" max="4" step="1" value="2"><span class="v" data-for="kioskN">2</span></label>
+    <label>Height <input type="range" id="kioskH" min="0.9" max="1.4" step="0.05" value="1.05"><span class="v" data-for="kioskH">1.05 m</span></label>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Meeting / closing area</summary>
+    <label class="toggle"><input type="checkbox" id="meetOn" checked> Show table</label>
+    <label>Table Ø <input type="range" id="tableR" min="0.5" max="1.1" step="0.05" value="0.7"><span class="v" data-for="tableR">1.40 m</span></label>
+    <label>Chairs <input type="range" id="chairN" min="0" max="6" step="1" value="4"><span class="v" data-for="chairN">4</span></label>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Reception counter</summary>
+    <label class="toggle"><input type="checkbox" id="recOn" checked> Show counter</label>
+    <label>Width <input type="range" id="recW" min="1" max="2.4" step="0.1" value="1.6"><span class="v" data-for="recW">1.6 m</span></label>
+    <label>Height <input type="range" id="recH" min="0.9" max="1.3" step="0.05" value="1.1"><span class="v" data-for="recH">1.10 m</span></label>
+  </details>
+
+  <details class="grp">
+    <summary class="gt">Extras</summary>
+    <label class="toggle"><input type="checkbox" id="cabinOn" checked> Storage cabin (lockable)</label>
+    <label>Cabin size <input type="range" id="cabinSz" min="1" max="2" step="0.1" value="1.4"><span class="v" data-for="cabinSz">1.4 m</span></label>
+    <label class="toggle"><input type="checkbox" id="brochOn" checked> Brochure stand</label>
+    <label class="toggle"><input type="checkbox" id="peopleOn" checked> Scale figures (staff/visitors)</label>
+  </details>
+</div>
+
+<div id="controls" class="panel">
+  <div><b>Orbit</b> — <kbd>drag</kbd> rotate · <kbd>scroll</kbd> zoom · <kbd>right-drag</kbd> pan</div>
+  <div style="margin-top:5px"><b>Walk</b> — <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows · mouse look · <kbd>Esc</kbd> exit</div>
+</div>
+
+<div class="btns">
+  <div id="btnOrbit" class="btn active">Orbit</div>
+  <div id="btnWalk" class="btn">Walk</div>
+  <div id="btnReset" class="btn">Reset view</div>
+  <div id="emptyStand" class="btn" style="background:rgba(181,75,75,.3);border-color:#aa3a4a">Empty booth</div>
+  <div id="helpBtn" class="btn" title="How to use">?</div>
+</div>
+
+<div id="tourOverlay">
+  <div id="tourCard">
+    <h3 id="tourTitle"></h3>
+    <p id="tourBody"></p>
+    <div class="tourFoot">
+      <div class="tourDots" id="tourDots"></div>
+      <div class="tourBtns">
+        <span class="tbtn ghost" id="tourSkip">Skip</span>
+        <span class="tbtn" id="tourBack">Back</span>
+        <span class="tbtn primary" id="tourNext">Next</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="seltools" class="panel">
+  <div class="strow">
+    <span class="nm" id="selName">Object</span>
+    <span class="lbl">Rotate</span>
+    <span class="sbtn rot" id="rotL">↺ Left</span>
+    <span class="sbtn rot" id="rotR">Right ↻</span>
+    <span class="sbtn" id="dup">Duplicate</span>
+    <span class="sbtn del" id="del">Delete</span>
+  </div>
+  <div class="strow">
+    <span class="lbl">W</span><input type="range" id="selW" min="0.3" max="3" step="0.05" value="1">
+    <span class="lbl">H</span><input type="range" id="selH" min="0.3" max="3" step="0.05" value="1">
+    <span class="lbl">D</span><input type="range" id="selD" min="0.3" max="3" step="0.05" value="1">
+  </div>
+  <div class="strow">
+    <span class="lbl">Scale</span><input type="range" id="selScale" min="0.3" max="3" step="0.05" value="1">
+    <span class="lbl">Lift</span><input type="range" id="selLift" min="0" max="2.2" step="0.02" value="0">
+  </div>
+</div>
+
+<div id="walltools" class="panel">
+  <span class="nm" id="wallName">Wall</span>
+  <span class="lbl">Style</span>
+  <select id="wallStyleSel">
+    <option value="branded">Branded</option>
+    <option value="solid">Solid (white)</option>
+    <option value="half">Half-height</option>
+    <option value="glass">Glass</option>
+  </select>
+  <span class="sbtn del" id="wallRemove">Remove</span>
+  <span class="sbtn" id="wallClose">Close</span>
+</div>
+
+<div id="hint">Click to look around · WASD to move · Esc to exit</div>
+<div id="err" class="panel"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+function fail(m){const e=document.getElementById('err');e.textContent=m;e.style.display='block';}
+if(typeof THREE==='undefined'){fail('3D library failed to load. Open this file with an internet connection so it can fetch three.js.');}
+
+/* ---------------- scene ---------------- */
+const COL={navy:0x0B2545,blue:0x1E63B3,accent:0xF26A21,teal:0x2f9e8f,wood:0xcaa45a,
+  grey:0x7a8aa3,red:0xb54b4b};
+const app=document.getElementById('app');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0d1526);
+scene.fog=new THREE.Fog(0x0d1526,24,64);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+const camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,200);
+
+/* ---------------- textures ---------------- */
+function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d');draw(ctx,w,h);const t=new THREE.CanvasTexture(c);t.anisotropy=8;return t;}
+const TEX={};
+TEX.wall=canvasTex(1024,512,(ctx,w,h)=>{
+  const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#0B2545');g.addColorStop(1,'#1E63B3');
+  ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=2;
+  for(let i=0;i<14;i++){ctx.beginPath();ctx.moveTo(0,i*40);ctx.lineTo(w,i*40+30);ctx.stroke();}
+  ctx.fillStyle='#F26A21';ctx.fillRect(70,300,150,10);
+  ctx.fillStyle='#fff';ctx.font='bold 92px Helvetica, Arial';ctx.fillText('CalcuQuote',64,250);
+  ctx.fillStyle='#bcd2f0';ctx.font='34px Helvetica, Arial';
+  ctx.fillText('Smarter sourcing & quoting for electronics mfg',64,360);
+});
+TEX.banner=canvasTex(1024,256,(ctx,w,h)=>{
+  ctx.fillStyle='#0B2545';ctx.fillRect(0,0,w,h);ctx.fillStyle='#F26A21';ctx.fillRect(0,h-14,w,14);
+  ctx.fillStyle='#fff';ctx.font='bold 120px Helvetica, Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('CalcuQuote',w/2,h/2-6);
+});
+TEX.screen=canvasTex(1024,576,(ctx,w,h)=>{
+  ctx.fillStyle='#0e1c30';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#1E63B3';ctx.fillRect(0,0,w,80);
+  ctx.fillStyle='#fff';ctx.font='bold 38px Helvetica, Arial';ctx.textBaseline='middle';ctx.textAlign='left';
+  ctx.fillText('CalcuQuote · Live BOM Quote',24,40);
+  ctx.font='26px Helvetica, Arial';
+  const rows=[['Part','Qty','Best Price','Lead'],['ATMEGA328P','5,000','$1.84','6 wk'],
+    ['LM358','12,000','$0.07','4 wk'],['0603 10k','50,000','$0.002','2 wk'],['USB-C Recpt','8,000','$0.21','8 wk']];
+  rows.forEach((r,i)=>{const y=130+i*82;
+    if(i>0&&i%2){ctx.fillStyle='#15273f';ctx.fillRect(0,y-34,w,72);}
+    ctx.fillStyle=i===0?'#9fb4d6':'#e6eefc';ctx.fillText(r[0],28,y);ctx.fillText(r[1],430,y);
+    ctx.fillStyle=i===0?'#9fb4d6':'#5ce0a8';ctx.fillText(r[2],640,y);
+    ctx.fillStyle=i===0?'#9fb4d6':'#e6eefc';ctx.fillText(r[3],860,y);});
+  ctx.fillStyle='#F26A21';ctx.fillRect(640,500,360,60);
+  ctx.fillStyle='#fff';ctx.font='bold 30px Helvetica, Arial';ctx.fillText('Saved 23% vs. baseline',656,532);
+});
+TEX.carpet=canvasTex(512,512,(ctx,w,h)=>{ctx.fillStyle='#1b63cf';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='rgba(255,255,255,.05)';for(let y=0;y<h;y+=8)for(let x=0;x<w;x+=8)if((x+y)%16===0)ctx.fillRect(x,y,4,4);});
+
+/* ---------------- lights ---------------- */
+scene.add(new THREE.HemisphereLight(0xbcd2f0,0x223044,0.6));
+scene.add(new THREE.AmbientLight(0xffffff,0.22));
+const key=new THREE.DirectionalLight(0xffffff,0.7);
+key.position.set(9,15,7);key.castShadow=true;key.shadow.mapSize.set(2048,2048);
+Object.assign(key.shadow.camera,{left:-16,right:16,top:16,bottom:-16});scene.add(key);
+
+const hall=new THREE.Mesh(new THREE.PlaneGeometry(64,64),new THREE.MeshStandardMaterial({color:0x232c3c}));
+hall.rotation.x=-Math.PI/2;hall.position.y=-0.01;hall.receiveShadow=true;scene.add(hall);
+
+/* ---------------- mesh helpers ---------------- */
+function box(w,h,d,color,o={}){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({color,roughness:o.rough??.7,metalness:o.metal??0,map:o.map||null}));
+  m.castShadow=true;m.receiveShadow=true;return m;}
+function cyl(rt,rb,h,color,o={}){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,o.seg||18),
+    new THREE.MeshStandardMaterial({color,roughness:o.rough??.6,metalness:o.metal??0}));
+  m.castShadow=true;m.receiveShadow=true;return m;}
+
+/* ---------------- furniture ---------------- */
+function monitorMesh(w){const g=new THREE.Group();
+  const sc=box(w,w*0.58,0.04,0xffffff,{map:TEX.screen,rough:.3});sc.userData.role='screen';
+  const fr=box(w+0.06,w*0.58+0.06,0.03,0x0a0f18);fr.position.z=-0.02;g.add(fr,sc);return g;}
+function kiosk(h){const g=new THREE.Group();
+  const base=box(0.7,h,0.5,COL.teal,{rough:.5});base.position.y=h/2;
+  const top=box(0.78,0.05,0.58,0x0d2a34);top.position.y=h+0.025;
+  const plate=box(0.5,0.18,0.02,0xffffff,{map:TEX.banner});plate.userData.role='logo';plate.position.set(0,h*0.55,0.26);
+  const mon=monitorMesh(0.9);mon.position.set(0,h+0.42,0);
+  g.add(base,top,plate,mon);return g;}
+function barStool(){const g=new THREE.Group();
+  g.add(Object.assign(cyl(0.18,0.18,0.06,0xe8edf5),{}));g.children[0].position.y=0.66;
+  const pole=cyl(0.03,0.03,0.66,0x8a93a3,{metal:.6,rough:.4});pole.position.y=0.33;
+  const foot=cyl(0.22,0.22,0.03,0x8a93a3,{metal:.6});foot.position.y=0.02;
+  g.add(pole,foot);return g;}
+function chair(){const g=new THREE.Group();
+  const seat=box(0.45,0.06,0.45,0x2a3954);seat.position.y=0.46;
+  const br=box(0.45,0.5,0.06,0x2a3954);br.position.set(0,0.72,-0.2);g.add(seat,br);
+  [[-.18,-.18],[.18,-.18],[-.18,.18],[.18,.18]].forEach(l=>{const lg=box(0.04,0.46,0.04,0x202b3f);lg.position.set(l[0],0.23,l[1]);g.add(lg);});
+  return g;}
+function meetingTable(r){const g=new THREE.Group();
+  const top=cyl(r,r,0.05,COL.wood,{rough:.5,seg:28});top.position.y=0.74;
+  const col=cyl(0.06,0.1,0.74,0x3a4256,{metal:.5,seg:16});col.position.y=0.37;
+  const base=cyl(r*0.5,r*0.5,0.04,0x3a4256,{metal:.5});base.position.y=0.02;
+  g.add(top,col,base);return g;}
+function reception(w,h){const g=new THREE.Group();
+  const body=box(w,h,0.6,COL.navy,{rough:.5});body.position.y=h/2;
+  const top=box(w+0.1,0.06,0.7,COL.accent);top.position.y=h+0.03;
+  const panel=box(w-0.1,h*0.55,0.03,0xffffff,{map:TEX.banner});panel.userData.role='logo';panel.position.set(0,h*0.55,0.31);
+  g.add(body,top,panel);return g;}
+function brochureStand(){const g=new THREE.Group();
+  const pole=cyl(0.04,0.04,1.5,0x6b7689,{metal:.5,seg:12});pole.position.y=0.75;
+  const base=cyl(0.3,0.3,0.04,0x6b7689,{metal:.5});base.position.y=0.02;g.add(pole,base);
+  for(let i=0;i<3;i++){const t=box(0.32,0.04,0.24,COL.red);t.position.set(0,0.7+i*0.32,0.12);t.rotation.x=-0.5;g.add(t);}
+  return g;}
+function cabin(sz){const g=new THREE.Group();const h=2.3;
+  const b=box(sz,h,sz,COL.grey,{rough:.7});b.position.y=h/2;
+  const door=box(0.6,1.9,0.02,0x5d6878);door.position.set(0,0.95,sz/2+0.01);
+  const handle=cyl(0.04,0.04,0.04,0x222,{metal:.6,seg:10});handle.rotation.z=Math.PI/2;handle.position.set(0.2,0.95,sz/2+0.03);
+  g.add(b,door,handle);return g;}
+function person(color){const g=new THREE.Group();
+  const shirt=new THREE.MeshStandardMaterial({color,roughness:.8});
+  const trouser=new THREE.MeshStandardMaterial({color:0x2a3346,roughness:.85});
+  const skin=new THREE.MeshStandardMaterial({color:0xd9b59a,roughness:.7});
+  const shoe=new THREE.MeshStandardMaterial({color:0x141a25,roughness:.6});
+  // legs + feet
+  [-0.1,0.1].forEach(x=>{
+    const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.06,0.9,10),trouser);leg.position.set(x,0.46,0);g.add(leg);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.07,0.24),shoe);foot.position.set(x,0.035,0.05);g.add(foot);});
+  // torso
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.15,0.56,12),shirt);torso.position.y=1.18;g.add(torso);
+  const shoulders=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.42,10),shirt);shoulders.rotation.z=Math.PI/2;shoulders.position.y=1.42;g.add(shoulders);
+  // arms + hands
+  [-1,1].forEach(s=>{
+    const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.05,0.6,10),shirt);
+    arm.position.set(s*0.24,1.12,0);arm.rotation.z=s*0.13;g.add(arm);
+    const hand=new THREE.Mesh(new THREE.SphereGeometry(0.055,10,10),skin);hand.position.set(s*0.265,0.83,0);g.add(hand);});
+  // neck + head
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.09,8),skin);neck.position.y=1.5;g.add(neck);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.135,18,18),skin);head.position.y=1.63;g.add(head);
+  g.traverse(o=>{o.castShadow=true;});return g;}
+function plant(){const g=new THREE.Group();
+  const pot=cyl(0.22,0.16,0.4,0x394256,{rough:.6});pot.position.y=0.2;g.add(pot);
+  const mat=new THREE.MeshStandardMaterial({color:0x2f7d4f,roughness:.8});
+  [[0,0.65,0,0.3],[0.12,0.8,0.05,0.26],[-0.1,0.78,0.08,0.24],[0.05,0.95,-0.06,0.22]].forEach(s=>{
+    const leaf=new THREE.Mesh(new THREE.SphereGeometry(s[3],10,10),mat);leaf.position.set(s[0],s[1],s[2]);leaf.castShadow=true;g.add(leaf);});
+  return g;}
+function sofa(){const g=new THREE.Group();const m={rough:.7};
+  const base=box(1.6,0.4,0.7,0x33405c,m);base.position.y=0.25;
+  const back=box(1.6,0.45,0.18,0x33405c,m);back.position.set(0,0.62,-0.26);
+  const aL=box(0.18,0.45,0.7,0x2a3650,m);aL.position.set(-0.71,0.45,0);
+  const aR=box(0.18,0.45,0.7,0x2a3650,m);aR.position.set(0.71,0.45,0);
+  const cush=box(1.3,0.12,0.6,0x46557a,m);cush.position.set(0,0.5,0.02);
+  g.add(base,back,aL,aR,cush);return g;}
+function coffeeTable(){const g=new THREE.Group();
+  const top=box(0.9,0.06,0.5,COL.wood,{rough:.5});top.position.y=0.4;
+  [[-.38,-.19],[.38,-.19],[-.38,.19],[.38,.19]].forEach(l=>{const lg=box(0.05,0.4,0.05,0x3a4256);lg.position.set(l[0],0.2,l[1]);g.add(lg);});
+  g.add(top);return g;}
+function tvStand(){const g=new THREE.Group();
+  const cab=box(1.2,0.5,0.4,COL.navy,{rough:.5});cab.position.y=0.25;g.add(cab);
+  const mon=monitorMesh(1.1);mon.position.set(0,1.25,0);g.add(mon);
+  const neck=box(0.08,0.6,0.08,0x222a38);neck.position.set(0,0.78,-0.02);g.add(neck);
+  return g;}
+function desk(){const g=new THREE.Group();
+  const top=box(1.4,0.05,0.7,COL.wood,{rough:.5});top.position.y=0.74;g.add(top);
+  [[-.62,-.3],[.62,-.3],[-.62,.3],[.62,.3]].forEach(l=>{const lg=box(0.06,0.74,0.06,0x3a4256);lg.position.set(l[0],0.37,l[1]);g.add(lg);});
+  return g;}
+function laptop(){const g=new THREE.Group();
+  const base=box(0.34,0.02,0.24,0x2b3242,{metal:.3,rough:.4});base.position.y=0.01;
+  const lid=box(0.34,0.21,0.015,0x1a2130,{metal:.3});lid.position.set(0,0.12,-0.11);lid.rotation.x=-0.35;
+  const disp=box(0.31,0.18,0.006,0xffffff,{map:TEX.screen,rough:.3});disp.userData.role='screen';
+  disp.position.set(0,0.12,-0.103);disp.rotation.x=-0.35;
+  g.add(base,lid,disp);return g;}
+
+/* ---------------- uploaded media (per-role texture overrides) ---------------- */
+const MEDIA={screen:null,logo:null,wall:null,banner:null};
+function applyMediaToGroup(grp){grp.traverse(o=>{
+  if(o.isMesh&&o.userData.role&&MEDIA[o.userData.role]){
+    o.material.map=MEDIA[o.userData.role];o.material.color&&o.material.color.set(0xffffff);o.material.needsUpdate=true;}});}
+function reapplyMedia(){applyMediaToGroup(BOOTH);applyMediaToGroup(FURN);applyMediaToGroup(EXTRA);}
+
+/* ---------------- build (driven by config) ---------------- */
+const BOOTH=new THREE.Group();scene.add(BOOTH);   // shell: carpet, walls, screen, banner
+const SPOTS=new THREE.Group();scene.add(SPOTS);
+const FURN=new THREE.Group();scene.add(FURN);     // configured furniture (movable)
+const EXTRA=new THREE.Group();scene.add(EXTRA);   // user-added objects (movable)
+let WALLSTYLE={};  // per-side style overrides {back:'glass',...}; empty = use global/default
+function clear(grp){while(grp.children.length){const c=grp.children.pop();
+  c.traverse&&c.traverse(o=>{if(o.geometry)o.geometry.dispose();});}}
+function spot(x,z){const s=new THREE.SpotLight(0xfff4e6,0.85,14,Math.PI/5,0.5,1.2);
+  s.position.set(x,3.4,z);s.target.position.set(x,0,z);SPOTS.add(s,s.target);
+  const f=cyl(0.06,0.09,0.14,0x222b3a,{seg:12});f.position.set(x,3.3,z);SPOTS.add(f);}
+
+function cfgVal(id){const e=document.getElementById(id);return e.type==='checkbox'?e.checked:parseFloat(e.value);}
+
+// shell = carpet, walls, screen, banner (rebuilt by shell sliders; does NOT touch furniture)
+function buildShell(){
+  clear(BOOTH);
+  const W=cfgVal('boothW'),D=cfgVal('boothD'),H=cfgVal('wallH');
+  const hx=W/2,hz=D/2;
+
+  const trim=new THREE.Mesh(new THREE.PlaneGeometry(W+0.2,D+0.2),new THREE.MeshStandardMaterial({color:COL.accent}));
+  trim.rotation.x=-Math.PI/2;trim.position.y=0.004;BOOTH.add(trim);
+  const carpet=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshStandardMaterial({map:TEX.carpet,roughness:.95}));
+  carpet.rotation.x=-Math.PI/2;carpet.position.y=0.012;carpet.receiveShadow=true;BOOTH.add(carpet);
+
+  const globalStyle=document.getElementById('wallStyle').value;const th=0.12;
+  function effStyle(side){return WALLSTYLE[side]||(side==='back'?'branded':globalStyle);}
+  function wall(side){
+    const wstyle=effStyle(side);
+    const horiz=(side==='back'||side==='front');const len=horiz?W:D;
+    const wh=(wstyle==='half')?H*0.5:H;
+    let mesh;
+    if(wstyle==='glass'){
+      const m=new THREE.MeshStandardMaterial({color:0x9ec7ec,transparent:true,opacity:0.18,roughness:.05,metalness:.1});
+      mesh=new THREE.Mesh(new THREE.BoxGeometry(horiz?len:th,wh,horiz?th:len),m);mesh.receiveShadow=true;
+    }else if(wstyle==='branded'){
+      mesh=box(horiz?len:th,wh,horiz?th:len,0xffffff,{map:TEX.wall,rough:.6});mesh.userData.role='wall';
+    }else{
+      mesh=box(horiz?len:th,wh,horiz?th:len,0xeef1f6,{rough:.7});  // white expo wall
+    }
+    const y=wh/2;
+    if(side==='back')mesh.position.set(0,y,-hz+th/2);
+    if(side==='front')mesh.position.set(0,y,hz-th/2);
+    if(side==='left')mesh.position.set(-hx+th/2,y,0);
+    if(side==='right')mesh.position.set(hx-th/2,y,0);
+    mesh.userData.wallSide=side;BOOTH.add(mesh);
+    if(wstyle!=='glass'){
+      const stripe=box(horiz?len:0.14,0.18,horiz?0.14:len,COL.accent);
+      stripe.position.copy(mesh.position);stripe.position.y=wh-0.12;stripe.userData.wallSide=side;BOOTH.add(stripe);
+    }
+  }
+  const backOn=cfgVal('wallBack');
+  if(backOn)wall('back');
+  if(cfgVal('wallLeft'))wall('left');
+  if(cfgVal('wallRight'))wall('right');
+  if(cfgVal('wallFront'))wall('front');
+
+  if(cfgVal('screenOn')&&backOn){const sw=cfgVal('screenW'),sh=cfgVal('screenH');
+    const frame=box(sw+0.15,sh+0.15,0.04,0x0a0f18);frame.position.set(hx*0.45,H*0.57,-hz+0.13);
+    const screen=box(sw,sh,0.06,0xffffff,{map:TEX.screen,rough:.3});screen.userData.role='screen';screen.position.set(hx*0.45,H*0.57,-hz+0.16);
+    BOOTH.add(frame,screen);}
+
+  if(cfgVal('bannerOn')){const by=cfgVal('bannerH'),bs=cfgVal('bannerSz');const half=bs/2;
+    const bmat=new THREE.MeshStandardMaterial({map:TEX.banner,side:THREE.DoubleSide,emissive:0x05101f,emissiveIntensity:.4});
+    [[0,half,0],[0,-half,0],[half,0,Math.PI/2],[-half,0,Math.PI/2]].forEach(p=>{
+      const seg=new THREE.Mesh(new THREE.PlaneGeometry(bs,0.8),bmat.clone());seg.userData.role='banner';seg.position.set(p[0],by,p[1]);seg.rotation.y=p[2];BOOTH.add(seg);});
+    const lm=new THREE.LineBasicMaterial({color:0x33445f});
+    [[half,half],[-half,half],[half,-half],[-half,-half]].forEach(c=>{
+      const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(c[0],by+0.4,c[1]),new THREE.Vector3(c[0],by+2.3,c[1])]);
+      BOOTH.add(new THREE.Line(g,lm));});}
+
+  const fw=document.getElementById('ftpW'),fd=document.getElementById('ftpD');
+  if(fw&&document.activeElement!==fw)fw.value=W;
+  if(fd&&document.activeElement!==fd)fd.value=D;
+  document.getElementById('area').textContent=`${(W*D).toFixed(1)} m²`;
+  const nW=[backOn,cfgVal('wallLeft'),cfgVal('wallRight'),cfgVal('wallFront')].filter(Boolean).length;
+  document.getElementById('standType').textContent=
+    nW===0?'Island':nW===1?'Peninsula':nW===2?'Corner':nW===3?'Inline / row':'Enclosed';
+  reapplyMedia();
+}
+
+// furniture = movable pieces (live in FURN; each pickable & draggable)
+function place(g,type,x,z,ry){g.userData.type=type;g.position.set(x,0,z);if(ry)g.rotation.y=ry;FURN.add(g);return g;}
+function buildFurniture(){
+  clear(FURN);clear(SPOTS);
+  const W=cfgVal('boothW'),D=cfgVal('boothD');const hx=W/2,hz=D/2;
+
+  const kn=cfgVal('kioskN'),kh=cfgVal('kioskH');
+  for(let i=0;i<kn;i++){const z=Math.min(-hz+1.4+i*1.6,hz-1);
+    place(kiosk(kh),'kiosk',-hx+1.1,z,0.3);
+    place(barStool(),'stool',-hx+1.9,z);
+    spot(-hx+1.2,z);}
+
+  if(cfgVal('meetOn')){const r=cfgVal('tableR');const tx=hx*0.4,tz=-hz*0.25;
+    place(meetingTable(r),'table',tx,tz);
+    const cn=cfgVal('chairN');for(let i=0;i<cn;i++){const a=i/cn*Math.PI*2;
+      place(chair(),'chair',tx+Math.cos(a)*(r+0.35),tz+Math.sin(a)*(r+0.35),-a+Math.PI/2);}
+    spot(tx,tz);}
+
+  if(cfgVal('recOn')){place(reception(cfgVal('recW'),cfgVal('recH')),'counter',hx-1.1,hz-1.0,Math.PI*0.85);spot(hx-1.1,hz-1.1);}
+  if(cfgVal('cabinOn')){const sz=cfgVal('cabinSz');place(cabin(sz),'cabin',-hx+sz/2+0.15,-hz+sz/2+0.15);}
+  if(cfgVal('brochOn')){place(brochureStand(),'brochure',hx-0.6,hz-0.6);}
+  if(cfgVal('peopleOn')){
+    [[hx*0.1,hz*0.4,COL.blue],[-hx*0.35,-hz*0.05,COL.accent],[hx*0.25,hz*0.05,COL.teal]].forEach(p=>{
+      place(person(p[2]),'person',p[0],p[1]);});}
+
+  reapplyMedia();refreshInventory();
+}
+
+function build(){buildShell();buildFurniture();}
+
+/* slider value labels */
+function refreshLabels(){
+  document.querySelectorAll('.v[data-for]').forEach(s=>{
+    const id=s.getAttribute('data-for');const v=parseFloat(document.getElementById(id).value);
+    if(id==='tableR'){s.textContent=(v*2).toFixed(2)+' m';}
+    else if(id==='kioskN'||id==='chairN'){s.textContent=String(v);}
+    else{s.textContent=v.toFixed(id==='wallH'||id==='bannerH'||id==='screenH'||id==='kioskH'||id==='recH'?2:1)+' m';}
+  });
+}
+const SIZE_IDS=['boothW','boothD'];
+const FURN_IDS=['kioskN','kioskH','meetOn','tableR','chairN','recOn','recW','recH','cabinOn','cabinSz','brochOn','peopleOn'];
+function onCtl(id){refreshLabels();
+  if(SIZE_IDS.includes(id))build();            // size change reflows everything
+  else if(FURN_IDS.includes(id))buildFurniture();
+  else buildShell();                           // walls / banner / screen / height
+}
+document.querySelectorAll('#cfg input[type=range],#cfg input[type=checkbox]').forEach(inp=>{
+  inp.addEventListener('input',()=>onCtl(inp.id));
+});
+document.getElementById('wallStyle').addEventListener('change',()=>buildShell());
+// edit footprint directly from the info panel
+function setBoothSize(which,val){const s=document.getElementById(which);if(!s)return;
+  const v=Math.max(2,Math.min(12,parseFloat(val)||6));s.value=v;refreshLabels();buildShell();}
+document.getElementById('ftpW').addEventListener('input',e=>setBoothSize('boothW',e.target.value));
+document.getElementById('ftpD').addEventListener('input',e=>setBoothSize('boothD',e.target.value));
+
+/* ---------------- controls (orbit + walk) ---------------- */
+let mode='orbit';const target=new THREE.Vector3(0,1.2,0);
+let radius=12,theta=Math.PI*0.28,phi=Math.PI*0.36;
+function applyOrbit(){camera.position.set(
+  target.x+radius*Math.sin(phi)*Math.cos(theta),target.y+radius*Math.cos(phi),
+  target.z+radius*Math.sin(phi)*Math.sin(theta));camera.lookAt(target);}
+const el=renderer.domElement;let dragging=false,panning=false,px=0,py=0,walkLook=false;
+
+/* ---- object selection / move / edit ---- */
+const ray=new THREE.Raycaster();const ndc=new THREE.Vector2();
+const dragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+let selected=null,objDragging=false,objRotating=false,downX=0,downY=0;const dragOff=new THREE.Vector3();let boxHelper=null;
+let riders=[];  // objects resting on top of the dragged object — move with it
+const seltools=document.getElementById('seltools');
+function computeRiders(A){
+  const aBox=new THREE.Box3().setFromObject(A);const topY=aBox.max.y;const out=[];
+  allObjects().forEach(B=>{if(B===A)return;
+    const b=new THREE.Box3().setFromObject(B);
+    const cx=(b.min.x+b.max.x)/2,cz=(b.min.z+b.max.z)/2;
+    const insideXZ=cx>=aBox.min.x-0.05&&cx<=aBox.max.x+0.05&&cz>=aBox.min.z-0.05&&cz<=aBox.max.z+0.05;
+    const resting=b.min.y>=topY-0.25&&b.min.y<=topY+0.4;          // base sits near A's top surface
+    if(insideXZ&&resting)out.push({o:B,dx:B.position.x-A.position.x,dz:B.position.z-A.position.z});
+  });
+  return out;
+}
+function setNdc(e){ndc.x=(e.clientX/window.innerWidth)*2-1;ndc.y=-(e.clientY/window.innerHeight)*2+1;ray.setFromCamera(ndc,camera);}
+function pickObject(e){setNdc(e);const hits=ray.intersectObjects([...FURN.children,...EXTRA.children],true);
+  if(!hits.length)return null;let o=hits[0].object;
+  while(o.parent&&o.parent!==FURN&&o.parent!==EXTRA)o=o.parent;return o;}
+function wallMeshes(){return BOOTH.children.filter(c=>c.userData&&c.userData.wallSide);}
+function pickAny(e){setNdc(e);
+  const hits=ray.intersectObjects([...FURN.children,...EXTRA.children,...wallMeshes()],true);
+  if(!hits.length)return null;let cur=hits[0].object;
+  while(cur){if(cur.userData&&cur.userData.wallSide)return {kind:'wall',side:cur.userData.wallSide};
+    if(cur.parent===FURN||cur.parent===EXTRA)return {kind:'obj',obj:cur};cur=cur.parent;}
+  return null;}
+/* ---- wall click-editor ---- */
+const WALL_LABEL={back:'Back wall',left:'Left wall',right:'Right wall',front:'Front wall'};
+let editingWall=null;const walltools=document.getElementById('walltools');
+function openWallEditor(side){editingWall=side;selectObj(null);
+  document.getElementById('wallName').textContent=WALL_LABEL[side];
+  document.getElementById('wallStyleSel').value=WALLSTYLE[side]||(side==='back'?'branded':document.getElementById('wallStyle').value);
+  walltools.classList.add('show');}
+function closeWallEditor(){editingWall=null;walltools.classList.remove('show');}
+document.getElementById('wallStyleSel').addEventListener('change',e=>{if(editingWall){WALLSTYLE[editingWall]=e.target.value;buildShell();}});
+document.getElementById('wallRemove').onclick=()=>{if(!editingWall)return;
+  const cb=document.getElementById('wall'+editingWall.charAt(0).toUpperCase()+editingWall.slice(1));
+  if(cb)cb.checked=false;buildShell();closeWallEditor();};
+document.getElementById('wallClose').onclick=closeWallEditor;
+function planePoint(e){setNdc(e);const p=new THREE.Vector3();return ray.ray.intersectPlane(dragPlane,p)?p:null;}
+function selectObj(o){
+  selected=o;
+  if(boxHelper){scene.remove(boxHelper);boxHelper.geometry.dispose();boxHelper=null;}
+  if(o){boxHelper=new THREE.BoxHelper(o,0xF26A21);scene.add(boxHelper);
+    seltools.classList.add('show');
+    document.getElementById('selName').textContent=(o.userData.type||'object').replace(/^\w/,c=>c.toUpperCase());
+    document.getElementById('selW').value=o.scale.x;
+    document.getElementById('selH').value=o.scale.y;
+    document.getElementById('selD').value=o.scale.z;
+    document.getElementById('selScale').value=o.scale.x;
+    document.getElementById('selLift').value=o.position.y;
+  }else{seltools.classList.remove('show');}
+}
+function deleteObj(){if(!selected)return;if(selected.parent)selected.parent.remove(selected);
+  selected.traverse(m=>{if(m.geometry)m.geometry.dispose();});selectObj(null);refreshInventory();}
+function duplicateObj(){if(!selected)return;const c=addObject(selected.userData.type);
+  c.position.copy(selected.position).add(new THREE.Vector3(0.6,0,0.6));
+  c.rotation.copy(selected.rotation);c.scale.copy(selected.scale);selectObj(c);}
+document.getElementById('rotL').onclick=()=>{if(selected){selected.rotation.y+=Math.PI/12;boxHelper&&boxHelper.update();}};
+document.getElementById('rotR').onclick=()=>{if(selected){selected.rotation.y-=Math.PI/12;boxHelper&&boxHelper.update();}};
+function syncAxisSliders(){if(!selected)return;
+  document.getElementById('selW').value=selected.scale.x;
+  document.getElementById('selH').value=selected.scale.y;
+  document.getElementById('selD').value=selected.scale.z;}
+document.getElementById('selScale').oninput=e=>{if(selected){selected.scale.setScalar(parseFloat(e.target.value));syncAxisSliders();boxHelper&&boxHelper.update();}};
+document.getElementById('selW').oninput=e=>{if(selected){selected.scale.x=parseFloat(e.target.value);boxHelper&&boxHelper.update();}};
+document.getElementById('selH').oninput=e=>{if(selected){selected.scale.y=parseFloat(e.target.value);boxHelper&&boxHelper.update();}};
+document.getElementById('selD').oninput=e=>{if(selected){selected.scale.z=parseFloat(e.target.value);boxHelper&&boxHelper.update();}};
+document.getElementById('selLift').oninput=e=>{if(selected){selected.position.y=parseFloat(e.target.value);boxHelper&&boxHelper.update();}};
+document.getElementById('del').onclick=deleteObj;
+document.getElementById('dup').onclick=duplicateObj;
+
+const TYPE_LIFT={laptop:0.75};  // default height off floor (sits on a table)
+function makeObject(type){switch(type){
+  case 'kiosk':return kiosk(1.05); case 'tv':return tvStand();
+  case 'counter':return reception(1.6,1.1); case 'table':return meetingTable(0.7);
+  case 'desk':return desk(); case 'laptop':return laptop();
+  case 'chair':return chair(); case 'stool':return barStool();
+  case 'sofa':return sofa(); case 'coffee':return coffeeTable();
+  case 'brochure':return brochureStand(); case 'cabin':return cabin(1.4);
+  case 'plant':return plant(); case 'person':return person(COL.blue);
+  default:return chair();}}
+function addObject(type){const g=makeObject(type);g.userData.type=type;
+  g.position.set(target.x,TYPE_LIFT[type]||0,target.z);
+  EXTRA.add(g);applyMediaToGroup(g);selectObj(g);refreshInventory();return g;}
+
+/* upload handler */
+document.getElementById('mediaFile').addEventListener('change',e=>{
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  const status=document.getElementById('mediaStatus');status.textContent='Loading…';
+  const url=URL.createObjectURL(file);
+  new THREE.TextureLoader().load(url,tex=>{
+    tex.anisotropy=8;
+    const tgt=document.getElementById('mediaTarget').value;
+    if(tgt==='selected'){
+      if(!selected){status.textContent='Select an object in the scene first.';return;}
+      let n=0;selected.traverse(o=>{if(o.isMesh&&o.userData.role){o.material=o.material.clone();o.material.map=tex;o.material.color.set(0xffffff);o.material.needsUpdate=true;n++;}});
+      status.textContent=n?`Applied to selected (${n} surface${n>1?'s':''}).`:'Selected object has no image surface.';
+    }else{
+      MEDIA[tgt]=tex;reapplyMedia();
+      status.textContent=`Applied to ${e.target.previousElementSibling?'':''}${tgt}. New matching objects will use it too.`;
+    }
+    e.target.value='';
+  },undefined,()=>{status.textContent='Could not load that image.';});
+});
+document.querySelectorAll('#cfg [data-add]').forEach(b=>{
+  b.addEventListener('click',()=>{addObject(b.getAttribute('data-add'));setMode('orbit');});
+});
+
+/* ---- clean slate / reset ---- */
+const DEFAULTS={boothW:6,boothD:6,wallH:3,wallBack:true,wallLeft:true,wallRight:false,wallFront:false,wallStyle:'branded',
+  bannerOn:true,bannerH:4.2,bannerSz:4,
+  screenOn:true,screenW:2.4,screenH:1.35,kioskN:2,kioskH:1.05,meetOn:true,tableR:0.7,
+  chairN:4,recOn:true,recW:1.6,recH:1.1,cabinOn:true,cabinSz:1.4,brochOn:true,peopleOn:true};
+const WALL_PRESETS={
+  island:{wallBack:false,wallLeft:false,wallRight:false,wallFront:false},
+  peninsula:{wallBack:true,wallLeft:false,wallRight:false,wallFront:false},
+  corner:{wallBack:true,wallLeft:true,wallRight:false,wallFront:false},
+  inline:{wallBack:true,wallLeft:true,wallRight:true,wallFront:false}};
+document.querySelectorAll('[data-walls]').forEach(b=>{
+  b.addEventListener('click',()=>applyConfig(WALL_PRESETS[b.getAttribute('data-walls')]));});
+const EMPTY={bannerOn:false,screenOn:false,kioskN:0,meetOn:false,chairN:0,
+  recOn:false,cabinOn:false,brochOn:false,peopleOn:false};
+function applyConfig(obj){for(const id in obj){const e=document.getElementById(id);if(!e)continue;
+  if(e.type==='checkbox')e.checked=obj[id];else e.value=obj[id];}refreshLabels();build();}
+function clearExtra(){while(EXTRA.children.length){const c=EXTRA.children.pop();
+  c.traverse(m=>{if(m.geometry)m.geometry.dispose();});}selectObj(null);refreshInventory();}
+document.getElementById('emptyStand').onclick=()=>{applyConfig(EMPTY);clearExtra();};
+document.getElementById('resetLayout').onclick=()=>{loadDefaultScene();};
+document.getElementById('clearAdded').onclick=clearExtra;
+
+/* ---- scene-objects overview ---- */
+const TYPE_LABEL={kiosk:'Demo kiosk',tv:'TV on stand',laptop:'Laptop',counter:'Counter',table:'Meeting table',
+  desk:'Desk',chair:'Chair',stool:'Bar stool',sofa:'Sofa',coffee:'Coffee table',brochure:'Brochure',
+  cabin:'Storage cabin',plant:'Plant',person:'Person'};
+function allObjects(){return [...FURN.children,...EXTRA.children];}
+function frameObject(o){selectObj(o);target.set(o.position.x,1.0,o.position.z);
+  radius=Math.max(4,radius>14?9:radius);setMode('orbit');}
+function refreshInventory(){
+  const list=document.getElementById('invList');if(!list)return;
+  const objs=allObjects();list.innerHTML='';
+  document.getElementById('invCount').textContent=objs.length?`(${objs.length})`:'';
+  objs.forEach(o=>{
+    const row=document.createElement('div');row.className='invrow';
+    const t=o.userData.type||'object';
+    row.innerHTML=`<span>${TYPE_LABEL[t]||t}</span><span class="x" title="delete">✕</span>`;
+    row.addEventListener('click',ev=>{
+      if(ev.target.classList.contains('x')){o.parent&&o.parent.remove(o);
+        o.traverse(m=>{if(m.geometry)m.geometry.dispose();});if(selected===o)selectObj(null);refreshInventory();}
+      else frameObject(o);});
+    list.appendChild(row);
+  });
+}
+
+/* ---- presets: save / load / reuse ---- */
+const LS_KEY='cqBoothPresets_v1';
+function lsGet(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{};}catch(e){return {};}}
+function lsSet(o){try{localStorage.setItem(LS_KEY,JSON.stringify(o));return true;}catch(e){return false;}}
+function getCfg(){const o={};document.querySelectorAll('#cfg input[type=range],#cfg input[type=checkbox]').forEach(e=>{o[e.id]=e.type==='checkbox'?e.checked:e.value;});o.wallStyle=document.getElementById('wallStyle').value;return o;}
+function setCfg(o){for(const id in o){const e=document.getElementById(id);if(!e)continue;if(e.type==='checkbox')e.checked=o[id];else e.value=o[id];}refreshLabels();}
+function collectObjects(){return allObjects().map(o=>({t:o.userData.type||'chair',
+  p:[+o.position.x.toFixed(3),+o.position.y.toFixed(3),+o.position.z.toFixed(3)],
+  r:+o.rotation.y.toFixed(3),s:[+o.scale.x.toFixed(3),+o.scale.y.toFixed(3),+o.scale.z.toFixed(3)]}));}
+function saveState(){return {cfg:getCfg(),wallStyles:Object.assign({},WALLSTYLE),objs:collectObjects()};}
+// default scene modelled on CalcuQuote's real inline stand (white walls, blue floor, branded back wall)
+const DEFAULT_SCENE={
+  cfg:{boothW:6,boothD:6,wallH:3.2,wallBack:true,wallLeft:true,wallRight:true,wallFront:false,wallStyle:'solid',
+    bannerOn:false,bannerH:4.2,bannerSz:4,screenOn:false,screenW:2.4,screenH:1.35,
+    kioskN:0,kioskH:1.05,meetOn:false,tableR:0.7,chairN:0,recOn:false,recW:1.6,recH:1.1,
+    cabinOn:false,cabinSz:1.4,brochOn:false,peopleOn:false},
+  objs:[
+    {t:'counter',p:[0,0,1.4],r:0},                       // main reception counter, centre-front
+    {t:'laptop',p:[0,1.13,1.5],r:Math.PI},               // laptop on the counter
+    {t:'counter',p:[2.4,0,0.6],r:-0.5,s:[0.78,1,0.78]},  // smaller round-ish counter, right
+    {t:'laptop',p:[2.4,1.13,0.7],r:Math.PI-0.5},
+    {t:'table',p:[-2.0,0,0.6],r:0},                      // bistro table, left
+    {t:'chair',p:[-2.0,0,1.45],r:Math.PI},
+    {t:'chair',p:[-2.5,0,-0.1],r:1.1},
+    {t:'person',p:[-1.0,0,2.1],r:-0.4},                  // staff by the counter
+    {t:'person',p:[1.4,0,2.2],r:0.5}
+  ]};
+function loadDefaultScene(){loadState(DEFAULT_SCENE);}
+function loadState(st){if(!st)return;
+  WALLSTYLE=Object.assign({},st.wallStyles||{});closeWallEditor();
+  setCfg(st.cfg||{});buildShell();clear(FURN);clearExtra();selectObj(null);
+  (st.objs||[]).forEach(o=>{const g=makeObject(o.t);g.userData.type=o.t;
+    g.position.set(o.p[0],o.p[1],o.p[2]);g.rotation.y=o.r||0;
+    if(o.s)g.scale.set(o.s[0],o.s[1],o.s[2]);EXTRA.add(g);applyMediaToGroup(g);});
+  refreshInventory();}
+function refreshPresetList(){const sel=document.getElementById('presetList');const p=lsGet();
+  const names=Object.keys(p);sel.innerHTML=names.length?names.map(n=>`<option>${n}</option>`).join(''):'<option value="">(no saved booths)</option>';}
+const pStatus=document.getElementById('presetStatus');
+document.getElementById('savePreset').onclick=()=>{
+  const name=(document.getElementById('presetName').value||'').trim()||'Untitled';
+  const p=lsGet();p[name]=saveState();
+  pStatus.textContent=lsSet(p)?`Saved "${name}".`:'Could not save (browser storage blocked) — use Export file instead.';
+  refreshPresetList();document.getElementById('presetList').value=name;};
+document.getElementById('loadPreset').onclick=()=>{const name=document.getElementById('presetList').value;
+  const p=lsGet();if(p[name]){loadState(p[name]);pStatus.textContent=`Loaded "${name}".`;}};
+document.getElementById('delPreset').onclick=()=>{const name=document.getElementById('presetList').value;
+  const p=lsGet();if(p[name]){delete p[name];lsSet(p);refreshPresetList();pStatus.textContent=`Deleted "${name}".`;}};
+document.getElementById('newBooth').onclick=()=>{loadDefaultScene();pStatus.textContent='Reset to the default CalcuQuote stand.';};
+document.getElementById('exportBooth').onclick=()=>{
+  const name=(document.getElementById('presetName').value||'booth').trim().replace(/[^\w-]+/g,'_')||'booth';
+  const blob=new Blob([JSON.stringify(saveState(),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'.json';a.click();
+  pStatus.textContent='Exported '+name+'.json';};
+document.getElementById('importBooth').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{loadState(JSON.parse(r.result));pStatus.textContent='Imported '+f.name;}
+    catch(err){pStatus.textContent='Could not read that file.';}e.target.value='';};r.readAsText(f);});
+refreshPresetList();
+
+/* accordion: opening one section closes the others (no scrolling needed) */
+const sections=Array.from(document.querySelectorAll('#cfg details.grp'));
+sections.forEach(d=>d.addEventListener('toggle',()=>{
+  if(d.open)sections.forEach(o=>{if(o!==d)o.open=false;});
+}));
+
+el.addEventListener('mousedown',e=>{if(mode!=='orbit')return;px=e.clientX;py=e.clientY;downX=e.clientX;downY=e.clientY;
+  if(e.button===0){const hit=pickAny(e);
+    if(hit&&hit.kind==='obj'){const o=hit.obj;closeWallEditor();selectObj(o);
+      if(e.shiftKey){objRotating=true;return;}        // Shift+drag → rotate
+      objDragging=true;riders=computeRiders(o);const p=planePoint(e);if(p){dragOff.copy(o.position).sub(p);dragOff.y=0;}return;}
+    if(hit&&hit.kind==='wall'){openWallEditor(hit.side);return;}
+    dragging=true;  // empty space → orbit (deselect on click, not drag)
+  }else if(e.button===2){panning=true;}});
+window.addEventListener('mouseup',e=>{
+  if(dragging&&!objDragging&&Math.abs(e.clientX-downX)<4&&Math.abs(e.clientY-downY)<4){selectObj(null);closeWallEditor();}
+  dragging=panning=objDragging=objRotating=false;riders=[];});
+el.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('mousemove',e=>{if(mode!=='orbit')return;const dx=e.clientX-px,dy=e.clientY-py;px=e.clientX;py=e.clientY;
+  if(objRotating&&selected){selected.rotation.y-=dx*0.012;boxHelper&&boxHelper.update();return;}
+  if(objDragging&&selected){const p=planePoint(e);if(p){selected.position.x=p.x+dragOff.x;selected.position.z=p.z+dragOff.z;
+    riders.forEach(r=>{r.o.position.x=selected.position.x+r.dx;r.o.position.z=selected.position.z+r.dz;});
+    boxHelper&&boxHelper.update();}return;}
+  if(dragging){theta+=dx*0.005;phi=Math.max(0.12,Math.min(Math.PI/2-0.02,phi+dy*0.005));applyOrbit();}
+  else if(panning){const right=new THREE.Vector3().subVectors(camera.position,target).cross(camera.up).normalize();
+    target.addScaledVector(right,-dx*0.01);target.y=Math.max(0.2,target.y+dy*0.01);applyOrbit();}});
+el.addEventListener('wheel',e=>{if(mode!=='orbit')return;e.preventDefault();radius=Math.max(3,Math.min(45,radius+e.deltaY*0.012));applyOrbit();},{passive:false});
+
+const keys={};let yaw=-Math.PI*0.78,pitch=-0.05,yawT=yaw,pitchT=pitch;const LOOK_SENS=0.0042;
+const walkPos=new THREE.Vector3(3,1.6,3.5);
+document.addEventListener('keydown',e=>{keys[e.code]=true;
+  if(mode==='walk'&&e.code.startsWith('Arrow'))e.preventDefault();
+  if((e.code==='Delete'||e.code==='Backspace')&&selected&&mode==='orbit'){e.preventDefault();deleteObj();}});
+document.addEventListener('keyup',e=>{keys[e.code]=false;});
+document.addEventListener('mousemove',e=>{if(mode!=='walk'||document.pointerLockElement!==el)return;
+  yawT-=e.movementX*LOOK_SENS;pitchT=Math.max(-1.2,Math.min(1.2,pitchT-e.movementY*LOOK_SENS));});
+document.addEventListener('pointerlockchange',()=>{if(mode==='walk'&&document.pointerLockElement!==el)setMode('orbit');});
+function setMode(m){mode=m;
+  document.getElementById('btnOrbit').classList.toggle('active',m==='orbit');
+  document.getElementById('btnWalk').classList.toggle('active',m==='walk');
+  document.getElementById('hint').style.display=m==='walk'?'block':'none';
+  if(m==='walk'){el.requestPointerLock&&el.requestPointerLock();}else{document.exitPointerLock&&document.exitPointerLock();applyOrbit();}}
+document.getElementById('btnOrbit').onclick=()=>setMode('orbit');
+document.getElementById('btnWalk').onclick=()=>setMode('walk');
+document.getElementById('btnReset').onclick=()=>{radius=12;theta=Math.PI*0.28;phi=Math.PI*0.36;target.set(0,1.2,0);setMode('orbit');};
+
+/* ---------------- loop ---------------- */
+const clock=new THREE.Clock();
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),0.05);
+  if(mode==='walk'){const sp=3.4*dt;
+    // smooth the look toward the mouse target (responsive but not jittery)
+    const k=1-Math.pow(0.0001,dt);yaw+=(yawT-yaw)*k;pitch+=(pitchT-pitch)*k;
+    const fwd=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+    const right=new THREE.Vector3(Math.sin(yaw+Math.PI/2),0,Math.cos(yaw+Math.PI/2));
+    if(keys['KeyW']||keys['ArrowUp'])walkPos.addScaledVector(fwd, sp);    // forward
+    if(keys['KeyS']||keys['ArrowDown'])walkPos.addScaledVector(fwd,-sp);  // backward
+    if(keys['KeyA']||keys['ArrowLeft'])walkPos.addScaledVector(right, sp);// left
+    if(keys['KeyD']||keys['ArrowRight'])walkPos.addScaledVector(right,-sp);// right
+    walkPos.x=Math.max(-13,Math.min(13,walkPos.x));walkPos.z=Math.max(-13,Math.min(13,walkPos.z));walkPos.y=1.6;
+    camera.position.copy(walkPos);
+    const dir=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));
+    camera.lookAt(walkPos.clone().add(dir));}
+  if(boxHelper)boxHelper.update();
+  renderer.render(scene,camera);}
+
+window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+
+/* ---------------- onboarding tour ---------------- */
+const TOUR=[
+  {t:'Welcome 👋',b:'This is the CalcuQuote Booth Configurator — design a trade-show stand in 3D. It opens on our real stand layout. Here’s a 30-second tour.'},
+  {t:'Look around',b:'<b>Orbit:</b> drag to rotate, scroll to zoom, right-drag to pan. <b>Walk:</b> click <kbd>Walk</kbd>, then move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or the arrow keys and look with the mouse.'},
+  {t:'Configure the booth',b:'Use the right-hand panel to change size, walls (white/branded/glass), banner and screen. Sections open one at a time, so nothing scrolls.'},
+  {t:'Add from the library',b:'Open <b>Object library</b> to drop in kiosks, counters, laptops, tables, plants and people — grouped by type. <b>Scene objects</b> lists everything you’ve placed.'},
+  {t:'Move, rotate, resize',b:'Click any object to select it. <b>Drag</b> to move, <b>Shift+drag</b> to rotate, or use the top toolbar to resize (W/H/D), lift, rotate, duplicate or delete. Items resting on a surface move with it.'},
+  {t:'Save & reuse',b:'Save a layout under <b>Presets</b> and reload it anytime, or Export a file to share. <b>Empty booth</b> clears everything; <b>Reset layout</b> returns to this default. Click <kbd>?</kbd> anytime to see this again.'}
+];
+let tourI=0;
+const tourOverlay=document.getElementById('tourOverlay');
+function renderTour(){
+  document.getElementById('tourTitle').textContent=TOUR[tourI].t;
+  document.getElementById('tourBody').innerHTML=TOUR[tourI].b;
+  document.getElementById('tourDots').innerHTML=TOUR.map((_,i)=>`<i class="${i===tourI?'on':''}"></i>`).join('');
+  document.getElementById('tourBack').style.visibility=tourI===0?'hidden':'visible';
+  document.getElementById('tourNext').textContent=tourI===TOUR.length-1?'Got it':'Next';
+}
+function showTour(i){tourI=i;renderTour();tourOverlay.classList.add('show');}
+function closeTour(){tourOverlay.classList.remove('show');try{localStorage.setItem('cqOnboardSeen','1');}catch(e){}}
+function maybeShowOnboarding(){let seen=false;try{seen=!!localStorage.getItem('cqOnboardSeen');}catch(e){}if(!seen)showTour(0);}
+document.getElementById('tourNext').onclick=()=>{if(tourI>=TOUR.length-1)closeTour();else showTour(tourI+1);};
+document.getElementById('tourBack').onclick=()=>{if(tourI>0)showTour(tourI-1);};
+document.getElementById('tourSkip').onclick=closeTour;
+document.getElementById('helpBtn').onclick=()=>showTour(0);
+tourOverlay.addEventListener('click',e=>{if(e.target===tourOverlay)closeTour();});
+
+if(typeof THREE!=='undefined'){refreshLabels();loadDefaultScene();applyOrbit();animate();maybeShowOnboarding();}
+</script>
+</body>
+</html>
