@@ -149,6 +149,7 @@
     <div id="palette" class="pal">
       <button class="pbtn" data-add="kiosk">+ Demo kiosk</button>
       <button class="pbtn" data-add="tv">+ TV on stand</button>
+      <button class="pbtn" data-add="wallscreen">+ Wall screen</button>
       <button class="pbtn" data-add="laptop">+ Laptop</button>
       <button class="pbtn" data-add="brochure">+ Brochure</button>
     </div>
@@ -527,6 +528,10 @@ function laptop(){const g=new THREE.Group();
   const disp=box(0.31,0.18,0.006,0xffffff,{map:TEX.screen,rough:.3});disp.userData.role='screen';
   disp.position.set(0,0.12,-0.103);disp.rotation.x=-0.35;
   g.add(base,lid,disp);return g;}
+function wallscreen(){const g=new THREE.Group();const w=1.6,h=0.9;  // mounted monitor (origin at its centre)
+  const frame=box(w+0.08,h+0.08,0.05,0x0a0f18);
+  const disp=box(w,h,0.04,0xffffff,{map:TEX.screen,rough:.3});disp.userData.role='screen';disp.position.z=0.03;
+  g.add(frame,disp);return g;}
 
 /* ---------------- uploaded media (per-role texture overrides) ---------------- */
 const MEDIA={screen:null,logo:null,wall:null,banner:null};
@@ -781,11 +786,11 @@ document.getElementById('selLift').oninput=e=>{if(selected){selected.position.y=
 document.getElementById('del').onclick=deleteObj;
 document.getElementById('dup').onclick=duplicateObj;
 
-const TYPE_LIFT={laptop:0.75};  // default height off floor (sits on a table)
+const TYPE_LIFT={laptop:0.75,wallscreen:1.6};  // default height off floor
 function makeObject(type){switch(type){
   case 'kiosk':return kiosk(1.05); case 'tv':return tvStand();
   case 'counter':return reception(1.6,1.1); case 'table':return meetingTable(0.7);
-  case 'desk':return desk(); case 'laptop':return laptop();
+  case 'desk':return desk(); case 'laptop':return laptop(); case 'wallscreen':return wallscreen();
   case 'chair':return chair(); case 'stool':return barStool();
   case 'sofa':return sofa(); case 'coffee':return coffeeTable();
   case 'brochure':return brochureStand(); case 'cabin':return cabin(1.4);
@@ -841,7 +846,7 @@ document.getElementById('resetLayout').onclick=()=>{loadDefaultScene();};
 document.getElementById('clearAdded').onclick=clearExtra;
 
 /* ---- scene-objects overview ---- */
-const TYPE_LABEL={kiosk:'Demo kiosk',tv:'TV on stand',laptop:'Laptop',counter:'Counter',table:'Meeting table',
+const TYPE_LABEL={kiosk:'Demo kiosk',tv:'TV on stand',wallscreen:'Wall screen',laptop:'Laptop',counter:'Counter',table:'Meeting table',
   desk:'Desk',chair:'Chair',stool:'Bar stool',sofa:'Sofa',coffee:'Coffee table',brochure:'Brochure',
   cabin:'Storage cabin',plant:'Plant',person:'Person'};
 function allObjects(){return [...FURN.children,...EXTRA.children];}
